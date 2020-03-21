@@ -52,17 +52,19 @@ pipeline {
             steps {		
 				script {
 					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
+					// TODO: configures DNS for virtual machines
 					sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine"
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						// sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
-						// sh "sleep 60"
-						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n 'DockerCompose' --query publicIps -o tsv > myfile.txt"
-						LINUX_PUBLIC_IP = readFile('myfile.txt').trim()
+						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
+						sh "sleep 60"
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
+						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
 						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
 						sh "sleep 60"
-						WINDOWS_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
+						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 					}
 					else {
 						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines"
@@ -73,8 +75,6 @@ pipeline {
 								}
 								steps {
 									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Linux' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
-									sh "sleep 60"
-									LINUX_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Linux' --query publicIps -o tsv
 								}
 							}	
 							stage('Windows Server 2016') {
@@ -82,46 +82,36 @@ pipeline {
 									branch "azcli-Deploy"
 								}
                     			steps {
-									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Windows' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
-									sh "sleep 60"
-									WINDOWS_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Windows' --query publicIps -o tsv
+									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Windows' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"									
                     			}
                 			}		
 						}
+						sh "sleep 60"
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Linux' --query publicIps -o tsv > PublicIPs.txt"
+						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim()
+						sh "'' > PublicIPs.txt"  
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Windows' --query publicIps -o tsv > PublicIPs.txt"
+						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 					}
 				}
-				echo "${LINUX_PUBLIC_IP}" 
+				// Clears the file
+				sh "'' > PublicIPs.txt"				
 			}
         }
-		// // Pinging to servers using Ansible playbook
-		// stage("Connection Test") {
-		// 	when { 
-		// 		anyOf { 
-		// 			branch "Terraform-Deploy"; branch "azcli-Deploy"
-		// 		}
-		// 	}
-		// 	steps {
-		// 		// script {
-		// 		// 	// TODO:
-		// 		// 	// Retrieves created virtual machine's public IP using azcli and taggs and configures DNS for the machines
-		// 		// 	if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-		// 		// 		LINUX_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv
-		// 		// 	}
-		// 		// 	else if ("${VM_TYPE}" == "Windows Server 2016") {
-		// 		// 		WINDOWS_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv
-		// 		// 	}
-		// 		// 	else {
-		// 		// 		LINUX_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Linux' --query publicIps -o tsv
-		// 		// 		WINDOWS_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Windows' --query publicIps -o tsv
-		// 		// 	}
-		// 		// }
-		
-		// 		// TODO:
-		// 		// Adds the virtual machines into Ansible 'hosts' file and tests connection using 'PING' command
+		// Tests connection to other servers using 'PING' command through Ansible playbook
+		stage("Connection Test") {
+			when { 
+				anyOf { 
+					branch "azcli-Deploy"; branch "Terraform-Deploy"
+				}
+			}
+			steps {
+				// TODO:
+				// Adds the virtual machines into Ansible 'hosts' file and tests connection using 'PING' command
 
-		// 		sh "echo Testing connection"
-	    // 		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
-		// 	}
-		// }
+				sh "echo Testing connection"
+	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
+			}
+		}
 	}
 }
