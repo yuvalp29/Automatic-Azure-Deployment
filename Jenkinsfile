@@ -38,7 +38,7 @@ pipeline {
 			}
 			steps {
 				script {
-                    currentBuild.displayName = "${version}"
+                    // currentBuild.displayName = "${version}"
 					
 					// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
 					// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
