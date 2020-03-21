@@ -53,21 +53,20 @@ pipeline {
 				script {
 					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
 					// TODO: configures DNS for virtual machines
-					sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine"
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
-						sh "sleep 60"
+						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 60 seconds"
+						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'Owner=Yuval' 'method=azcli'"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
 						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
-						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
-						sh "sleep 60"
+						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 60 seconds"
+						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456'  --tags 'Owner=Yuval' 'method=azcli'"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 					}
 					else {
-						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines"
+						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 60 seconds"
 						parallel {
 							stage('Linux Ubuntu 16.04') {
 								when { 
@@ -86,7 +85,6 @@ pipeline {
                     			}
                 			}		
 						}
-						sh "sleep 60"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Linux' --query publicIps -o tsv > PublicIPs.txt"
 						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 						sh "'' > PublicIPs.txt"  
@@ -95,7 +93,7 @@ pipeline {
 					}
 				}
 				// Clears the file
-				sh "'' > PublicIPs.txt"				
+				sh "echo '' > PublicIPs.txt"				
 			}
         }
 		// Tests connection to other servers using 'PING' command through Ansible playbook
