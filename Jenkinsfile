@@ -54,12 +54,12 @@ pipeline {
 					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
 					sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine"
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
-						sh "sleep 60"
-						LINUX_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv
+						// sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
+						// sh "sleep 60"
+						LINUX_PUBLIC_IP = sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n 'DockerCompose' --query publicIps -o tsv"
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
-						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
+						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
 						sh "sleep 60"
 						WINDOWS_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv
 					}
@@ -71,7 +71,7 @@ pipeline {
 									branch "azcli-Deploy"
 								}
 								steps {
-									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Linux' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
+									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Linux' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
 									sh "sleep 60"
 									LINUX_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Linux' --query publicIps -o tsv
 								}
@@ -81,7 +81,7 @@ pipeline {
 									branch "azcli-Deploy"
 								}
                     			steps {
-									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Windows' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
+									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Windows' --image 'win2016datacenter' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
 									sh "sleep 60"
 									WINDOWS_PUBLIC_IP = az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Windows' --query publicIps -o tsv
                     			}
@@ -89,6 +89,7 @@ pipeline {
 						}
 					}
 				}
+				sh "echo $LINUX_PUBLIC_IP"
 			}
         }
 		// // Pinging to servers using Ansible playbook
