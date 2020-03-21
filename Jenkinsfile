@@ -56,7 +56,7 @@ pipeline {
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
 						// sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
 						// sh "sleep 60"
-						def pubIP = $(sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n 'DockerCompose' --query publicIps -o tsv")
+						def pubIP = sh "$(az vm show -d -g $AZURE_RESOURCE_GROUP -n 'DockerCompose' --query publicIps -o table)"
 						LINUX_PUBLIC_IP = pubIP
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
