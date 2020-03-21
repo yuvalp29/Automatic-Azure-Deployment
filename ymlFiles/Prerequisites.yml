@@ -1,0 +1,38 @@
+---
+- hosts: deploy_jnlp_servers
+  become: yes
+  become_method: sudo
+  become_user: jenkins
+  tasks:
+    # - name: Update virtual machine. Equals to "apt-get update"
+    #   apt:
+    #     update_cache: yes
+
+    - name: Install Unzip
+      apt: 
+        name=unzip 
+        state=latest
+
+    - name: Install Python
+      apt: 
+        name=python-pip 
+        state=latest
+    
+    - name: Install pexpect
+      pip:
+        name: pexpect
+  
+    - name: Install Docker
+      pip: 
+        name=docker-py
+
+    # - name: Install Terraform
+    #   script: ./scripts/config_Terraform.sh
+    
+    # - name: Upgrade all packages to the latest version
+    #   apt:
+    #     name: "*"
+    #     state: latest
+
+    - name: Validate Terraform
+      shell: terraform version
