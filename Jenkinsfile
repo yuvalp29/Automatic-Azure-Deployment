@@ -52,22 +52,21 @@ pipeline {
             steps {		
 				script {
 					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
-					// TODO: configures DNS for virtual machines
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 120 seconds"
+						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
 						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedlinux01' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'Owner=Yuval' 'method=azcli'"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
 						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
-						echo ${LINUX_PUBLIC_IP}
+						sh "echo ${LINUX_PUBLIC_IP}"
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
-						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 120 seconds"
+						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
 						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedwindows01' --admin-username 'techadmin' --admin-password 'Aa123456123456'  --tags 'Owner=Yuval' 'method=azcli'"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 					}
 					else {
-						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 120 seconds"
+						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 3 minutes"
 						parallel {
 							stage('Linux Ubuntu 16.04') {
 								when { 
