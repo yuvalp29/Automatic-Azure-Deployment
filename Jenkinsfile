@@ -4,7 +4,7 @@ pipeline {
 		VM_TYPE              = ""
 		VM_NAME              = ""
 		VM_SIZE              = ""
-		TEST                 = 186.2.9.50
+		TEST                 = ""
 		AZURE_RESOURCE_GROUP = "Technology-RG"
 		AZURE_APP_ID         = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
 		AZURE_PASSWORD       = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
@@ -40,6 +40,9 @@ pipeline {
 					// Reads parameters file and splits the lines to parameters for furthur creation proccesing 
 					def filePath = readFile "./txtFiles/Parameters.txt"                 
 				    def lines = filePath.readLines() 
+					def ip = 182.2.9.51
+					TEST = ip
+					
 					VM_TYPE = "${lines[0]}"
 					VM_NAME = "${lines[1]}"
 					VM_SIZE = "${lines[2]}"
