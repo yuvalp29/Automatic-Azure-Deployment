@@ -32,7 +32,9 @@ pipeline {
 		// Reads virtual machine's parameters from text file and loggs into Azure cloud provider
 		stage("Initialize") {
 			when { 
-                branch "master";  branch "azcli-Deploy"; branch "Terraform-Deploy"
+				anyOf {
+					branch "master";  branch "azcli-Deploy"; branch "Terraform-Deploy"
+				}                
 			}
 			steps {
 				script {
