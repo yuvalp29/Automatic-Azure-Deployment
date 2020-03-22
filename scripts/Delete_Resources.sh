@@ -34,8 +34,3 @@ sleep 30
 
 echo "Deleting network security group, it may take up to 30 seconds"
 az network nsg delete -g $AZURE_RESOURCE_GROUP -n $NSG
-
-echo $'\nAll resources deleted successfully'
-
-echo "Press ENTER to continue"
-read varName

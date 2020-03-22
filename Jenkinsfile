@@ -143,10 +143,18 @@ pipeline {
 					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
 						sh "chmod +x ./scripts/Delete_Resources.sh"
 						sh "./scripts/Delete_Resources.sh ${VM_NAME}"
-						sh "echo Resources deleted successfuly"   	
+						sh "echo All resources deleted successfully"   	
 					}
 				}
 			}
 		}
 	}
+	post {
+        success {
+            mail to:"ypodoksik29@gmail.com", subject:"SUCCESS: ${currentBuild.fullDisplayName}", body: "$VM_NAME $VM_TYPE virtual machine in size $VM_SIZE was created and then deleted successfully."
+        }
+        failure {
+            mail to:"ypodoksik29@gmail.com", subject:"FAILED: ${currentBuild.fullDisplayName}", body: "There were problems in creating/deleting $VM_NAME $VM_TYPE virtual machine in size $VM_SIZE."
+        }
+    }   
 }
