@@ -37,23 +37,20 @@ pipeline {
 				}
 			}
 			steps {
-				script {		
-					// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
-					// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
-					// sh "while read line; do echo $line; done < ./txtFiles/company.txt"
-					def file = readFile ./txtFiles/Parameters.txt
-					def lines = file.readLines()
+				// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
+				// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 
-					// sh "read -d '' -r -a lines < ./txtFiles/Parameters.txt"
-					VM_TYPE = "${lines[0]}"
-					VM_NAME = "${lines[1]}"
-					VM_SIZE = "${lines[2]}"
-				}
+				sh "chmod +x ./scripts/SplitToParameters.sh"
+				sh "./scripts/SplitToParameters.sh $VM_TYPE $VM_NAME $VM_SIZE"
 
+				// VM_TYPE = "Linux Ubuntu"
+				// VM_NAME = "Technology-Automated"
+				// VM_SIZE = "Standard_D2_v2" 
+				
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
 
-				sh "echo VM TYPE: ${VM_TYPE}, VM NAME: ${VM_NAME}, VM SIZE: ${VM_SIZE}"
+				sh "echo VM TYPE: ${VM_TYPE} VM NAME: ${VM_NAME} VM SIZE: ${VM_SIZE}"
 			}
 		}
 	}
