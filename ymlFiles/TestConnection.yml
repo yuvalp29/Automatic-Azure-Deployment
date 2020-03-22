@@ -1,5 +1,5 @@
 ---
-- hosts: linux_server
+- hosts: azcli_servers
   become: yes
   become_method: sudo
   become_user: jenkins

@@ -32,5 +32,5 @@ echo "Deleting public IP, it may take up to 30 seconds"
 az network public-ip delete -g $AZURE_RESOURCE_GROUP -n $PUBIP
 sleep 30
 
-echo "Deleting network security group, it may take up to 30 seconds"
+echo "Deleting network security group, it may take up to 15 seconds"
 az network nsg delete -g $AZURE_RESOURCE_GROUP -n $NSG
