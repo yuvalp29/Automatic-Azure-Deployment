@@ -63,7 +63,7 @@ pipeline {
 						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
 
 						// Adds created virtual machines into Ansible 'hosts' file
-						sh "echo $'\n[linux_server]\n$LINUX_PUBLIC_IP' >> ./Intentory/hosts.ini"
+						sh "echo -en \n[linux_server]\n$LINUX_PUBLIC_IP >> ./Intentory/hosts.ini"
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
 						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
@@ -72,7 +72,7 @@ pipeline {
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 
 						// Adds created virtual machines into Ansible 'hosts' file
-						sh "echo $'\n[windows_server]\n$WINDOWS_PUBLIC_IP' >> ./Intentory/hosts.ini"
+						sh "echo -en \n[windows_server]\n$WINDOWS_PUBLIC_IP >> ./Intentory/hosts.ini"
 					}
 					else {
 						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 3 minutes"
@@ -101,7 +101,7 @@ pipeline {
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 
 						// Adds created virtual machines into Ansible 'hosts' file
-						sh "echo $'\n[linux_server]\n$LINUX_PUBLIC_IP\n[windows_server]\n$WINDOWS_PUBLIC_IP' >> ./Intentory/hosts.ini"
+						sh "echo -en \n[linux_server]\n$LINUX_PUBLIC_IP\n[windows_server]\n$WINDOWS_PUBLIC_IP >> ./Intentory/hosts.ini"
 					}
 				}
 				// Clears the file
