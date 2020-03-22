@@ -5,7 +5,7 @@ pipeline {
 		VM_NAME              = ""
 		VM_SIZE              = ""
 		LINUX_PUBLIC_IP      = ""
-		Windows_PUBLIC_IP    = ""
+		WINDOWS_PUBLIC_IP    = ""
 		TERMINATION_INPUT    = ""
 		AZURE_RESOURCE_GROUP = "Technology-RG"
 		AZURE_APP_ID         = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
