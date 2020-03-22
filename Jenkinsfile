@@ -41,7 +41,7 @@ pipeline {
 					// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
 					// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 					// sh "while read line; do echo $line; done < ./txtFiles/company.txt"
-					sh "IFS=$'\n'"
+					// sh "IFS=$'\n'"
 					sh "read -d '' -r -a lines < ./txtFiles/Parameters.txt"
 					VM_TYPE = "${lines[0]}"
 					VM_NAME = "${lines[1]}"
