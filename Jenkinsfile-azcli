@@ -4,6 +4,9 @@ pipeline {
 		VM_TYPE              = ""
 		VM_NAME              = ""
 		VM_SIZE              = ""
+		LINUX_PUBLIC_IP      = ""
+		Windows_PUBLIC_IP    = ""
+		TERMINATION_INPUT    = ""
 		AZURE_RESOURCE_GROUP = "Technology-RG"
 		AZURE_APP_ID         = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
 		AZURE_PASSWORD       = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
@@ -25,23 +28,28 @@ pipeline {
             }
         }
 		// Reads virtual machine's parameters from text file and loggs into Azure cloud provider
-		stage("Inittialize") {
+		stage("Initialize") {
 			when { 
-				branch "azcli-Deploy"
+				anyOf {
+					branch "master";  branch "azcli-Deploy"; branch "Terraform-Deploy"
+				}                
 			}
 			steps {
 				script {
-                    currentBuild.displayName = "${version}"
-                }
-				// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
-				// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
+					// Reads parameters file and splits the lines to parameters for furthur creation proccesing 
+					def filePath = readFile "./txtFiles/Parameters.txt"                 
+				    def lines = filePath.readLines() 
+					VM_TYPE = "${lines[0]}"
+					VM_NAME = "${lines[1]}"
+					VM_SIZE = "${lines[2]}"
+				}
 				
-				VM_TYPE = "Linux Ubuntu"
-				VM_NAME = "Technology-Automated"
-				VM_SIZE = "Standard_D2_v2" 
+				// Changes permissions to 'hosts' file in order to add the newly created servers 
+				sh "chmod 777 ./Inventory/hosts.ini"				
+				sh """echo -en "\n\\[azcli_servers\\]" >> ./Inventory/hosts.ini"""
 
 				sh "echo Connecting to Azure cloud provider"
-				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"
+				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
 			}
 		}
 		// Creates virtual machines using azcli
@@ -51,169 +59,138 @@ pipeline {
 			}
             steps {		
 				script {
-					sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine"
+					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
+						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
+						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedlinux01' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'Owner=Yuval' 'method=azcli'"
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
+						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
+
+						// Adds created virtual machine into Ansible 'hosts' file
+						sh """echo -en "\n$LINUX_PUBLIC_IP" >> ./Inventory/hosts.ini"""
 					}
-					else if ("${DEPLOYMENT_INPUT}" == "Windows Server 2016") {
-						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
+					else if ("${VM_TYPE}" == "Windows Server 2016") {
+						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
+						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedwindows01' --admin-username 'techadmin' --admin-password 'Aa123456123456'  --tags 'Owner=Yuval' 'method=azcli'"
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
+						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
+
+						// Adds created virtual machine into Ansible 'hosts' file
+						sh """echo -en "\n$WINDOWS_PUBLIC_IP" >> ./Inventory/hosts.ini"""
 					}
 					else {
-						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines"
+						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 3 minutes"
 						parallel {
-							stage('Windows Server 2016') {
-								when { 
-									branch "azcli-Deploy"
-								}
-                    			steps {
-									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Windows' --image 'win2016datacenter' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
-                    			}
-                			}
 							stage('Linux Ubuntu 16.04') {
 								when { 
 									branch "azcli-Deploy"
 								}
 								steps {
-									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Linux' --image 'UbuntuLTS' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' --tags 'environment=Staging' --tags 'method=azcli'"
+									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Linux' --image 'UbuntuLTS' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedlinux01' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"
 								}
-							}			
+							}	
+							stage('Windows Server 2016') {
+								when { 
+									branch "azcli-Deploy"
+								}
+                    			steps {
+									sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME-Windows' --image 'win2016datacenter' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedwindows01' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'tagname=DevOps' 'environment=Staging' 'method=azcli'"									
+                    			}
+                			}		
 						}
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Linux' --query publicIps -o tsv > PublicIPs.txt"
+						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim()
+						sh "'' > PublicIPs.txt"  
+						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Windows' --query publicIps -o tsv > PublicIPs.txt"
+						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
+
+						// Adds created virtual machines into Ansible 'hosts' file
+						sh """echo -en "\n$LINUX_PUBLIC_IP\n$WINDOWS_PUBLIC_IP" >> ./Inventory/hosts.ini"""
 					}
 				}
+				// Clears the file
+				sh "echo > PublicIPs.txt"				
 			}
         }
-		// Pinging to servers using Ansible playbook
+		// Tests connection to other servers using 'PING' command through Ansible playbook
 		stage("Connection Test") {
 			when { 
 				anyOf { 
-					branch "Terraform-Deploy"; branch "azcli-Deploy"
+					branch "azcli-Deploy"; branch "Terraform-Deploy"
 				}
 			}
 			steps {
-				// TODO:
-				// Retreives created virtual machine's public IP using azcli and taggs and configures DNS for the machines
-				
-				// TODO:
-				// Adds the virtual machines into Ansible 'hosts' file and tests connection using 'PING' command
-
+				// TODO: Configure ssh from Ansible server to newly created servers and run Ansible playbook
 				sh "echo Testing connection"
-	    		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
+	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
+			}
+		}
+		// Validates whether to cleanup all created resources
+		stage("Validtaion") {
+			when{ 
+				branch "azcli-Deploy"
+			}
+			steps {
+				timeout(time: 60, unit: 'SECONDS') {
+					script {
+						def userInput = input id: 'userInput', message: 'Please type your answer', ok: 'Next', 
+						                parameters: [[$class: 'ChoiceParameterDefinition', 
+										            choices: ["Yes, delete my server", "No, keep it alive"].join('\n'), 
+										            description: 'Would you like to delete all created resources?', 
+													name:'TERMINATION']]
+    					
+						// Saves user's choise  for furthur steps 
+						TERMINATION_INPUT = userInput
+					}	
+				}
+			}
+		}
+		// Cleans all created and modified resources 
+		stage("Cleanup") {
+			when{ 
+				branch "azcli-Deploy"
+			}
+			steps{		
+				sh "echo Cleaning up resources"	
+				script{
+					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
+						parallel (
+							"Cleanup Files" : {
+								script {
+									// Checks whether to remove new added lines into 'hosts' file and removes them
+									if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
+										sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+									}
+									else {
+										sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+									}
+								}
+							},
+							"Cleanup Resources" : {
+								script {
+									sh "chmod +x ./scripts/Delete_Resources.sh"
+									sh "./scripts/Delete_Resources.sh ${VM_NAME}"
+									sh "echo All resources deleted successfully"
+								}
+							}
+						)
+					}
+				}
 			}
 		}
 	}
+	// post {
+    //     success {
+	// 		agent { label 'master' }
+    //         mail to:"ypodoksik29@gmail.com", 
+	// 		subject:"SUCCESS: ${currentBuild.fullDisplayName}", 
+	// 		body: "$VM_NAME $VM_TYPE virtual machine in size $VM_SIZE was created and then deleted successfully."
+    //     }
+    //     failure {
+	// 		agent { label 'master' }
+    //         mail to:"ypodoksik29@gmail.com", 
+	// 		subject:"FAILED: ${currentBuild.fullDisplayName}", 
+	// 		body: "There were problems in creating/deleting $VM_NAME $VM_TYPE virtual machine in size $VM_SIZE."
+    //     }
+    // }   
 }
-
-
-
-
-		// // TODO: Install Terraform using the script
-		// // Installing prerequisites using Ansible playbook and inittiating Terraform
-		// stage("Prerequisites") {
-		// 	when { 
-		// 		anyOf { 
-		// 			branch "Ansible-Deploy"; branch "Terraform-Deploy"
-		// 		}
-		// 	}
-		// 	steps {
-		// 		sh "echo Installing prerequisites and inittialyzing Terraform"
-	    // 		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/Prerequisites.yml"
-		// 		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/AzureCLI.yml"
-		// 	}
-		// }
-		// // Getting from user what vm version to create
-		// stage("VM Deployment Option") {
-			
-		// 	agent { label 'k8s' }
-
-		// 	when { 
-		// 		branch "Terraform-Deploy"
-		// 	}
-		// 	steps {
-		// 		timeout(time: 45, unit: 'SECONDS') {
-		// 			script {
-		// 				def userInput = input id: 'userInput', message: 'Please Provide Parameters', ok: 'Next', 
-		// 				                parameters: [[$class: 'ChoiceParameterDefinition', 
-		// 											  choices: ["Deploy both virtual mechines", 
-		// 											            "Deploy Linux Ubuntu 16.04 virtual machine", 
-		// 														"Deploy Windows Server 2019 virtual machine"].join('\n'), 
-		// 											  description: 'Please select deployment option and operating system version', 
-		// 											  name:'DEPLOYMENT']]
-    					
-		// 				// Saving user choise in global variable for furthur steps 
-		// 				DEPLOYMENT_INPUT = userInput
-		// 			}	
-		// 		}
-		// 	}
-		// }
-		// // TODO:
-		// // Creating virtual machines according to user's choise + validating the creation
-		// stage("VM Creation") {
-
-		// 	agent { label 'k8s' }
-
-		// 	when { 
-		// 		branch "Terraform-Deploy"
-		// 	}
-		// 	steps {		
-		// 		script {
-		// 			if ("${DEPLOYMENT_INPUT}" == "Deploy Linux Ubuntu 16.04 virtual machine") {
-		// 				// TODO: Retrieve public IP
-		// 				sh """
-		// 				echo Creating Azure resources for Linux Ubuntu 16.04 virtual machine.
-		// 				terraform plan -target=./tfFiles/Linux_VM.tf
-		// 				terraform apply -target=./tfFiles/Linux_VM.tf -auto-approve
-		// 				"""
-		// 			}
-		// 			else if ("${DEPLOYMENT_INPUT}" == "Deploy Windows Server 2019 virtual machine") {
-		// 				// TODO: Retrieve public IP
-		// 				sh """
-        //                 echo Creating Azure resources for Windows Server 2019 virtual machine.
-		// 				terraform plan -target=./tfFiles/Windows_VM.tf
-		// 				terraform apply -target=./tfFiles/Windows_VM.tf -auto-approve
-        //                 """
-		// 			}
-		// 			else {
-		// 				// TODO: Retrieve public IP
-		// 				sh "echo Creating Azure resources for both Windows and Linux virtual machines."
-		// 				parallel {
-		// 					stage('Windows Server 2019') {
-		// 						when { 
-		// 							branch "Terraform-Deploy"
-		// 						}
-        //             			steps {
-		// 							sh """
-		// 							terraform plan -target=./tfFiles/Windows_VM.tf
-		// 							terraform apply -target=./tfFiles/Windows_VM.tf -auto-approve
-        //                 			"""
-        //             			}
-        //         			}
-		// 					stage('Linux Ubuntu 16.04') {
-		// 						when { 
-		// 							branch "Terraform-Deploy"
-		// 						}
-		// 						steps {
-		// 							sh """
-		// 							terraform plan -target=./tfFiles/Linux_VM.tf
-		// 							terraform apply -target=./tfFiles/Linux_VM.tf -auto-approve
-		// 							"""
-		// 						}
-		// 					}			
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }		
-		// // TODO:
-		// stage('Configure Jenkins Slaves') {
-		// 	// Configuring the vms as jenkins slaves: connecting the VM to the master using ssh configuration
-		// 	// Pring a message that says that vm are ready and configured for slave 
-			
-		// 	agent { label 'k8s' }
-			
-		// 	when { 
-		// 		branch "Terraform-Deploy"
-		// 	}
-		// 	steps {		
-		// 		sh "echo Configuring Jenkins slaves."	
-		// 	}
-		// }
