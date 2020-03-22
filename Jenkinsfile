@@ -40,15 +40,18 @@ pipeline {
 				script {		
 					// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
 					// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
-
-					VM_TYPE = "Linux Ubuntu"
-					VM_NAME = "Technology-Automated"
-					VM_SIZE = "Standard_D2_v2" 
+					// sh "while read line; do echo $line; done < ./txtFiles/company.txt"
+					sh "IFS=$'\n' read -d '' -r -a lines < ./txtFiles/Parameters.txt"
+					VM_TYPE = "${lines[0]}"
+					VM_NAME = "${lines[1]}"
+					VM_SIZE = "${lines[2]}"
 				}
 
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
 			}
+
+			sh "echo VM TYPE: ${VM_TYPE}, VM NAME: ${VM_NAME}, VM SIZE: ${VM_SIZE}"
 		}
 	}
 }
