@@ -51,6 +51,9 @@ pipeline {
 				branch "azcli-Deploy"
 			}
             steps {		
+				// Changes permissions to 'hosts' file in order to add the newly created servers 
+				sh "chmod 777 ./Intentory/hosts.ini"
+				
 				script {
 					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
@@ -58,13 +61,18 @@ pipeline {
 						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'UbuntuLTS' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedlinux01' --admin-username 'techadmin' --admin-password 'Aa123456123456' --tags 'Owner=Yuval' 'method=azcli'"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
 						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
-						// sh "echo ${LINUX_PUBLIC_IP}"
+
+						// Adds created virtual machines into Ansible 'hosts' file
+						sh "echo $'\n[linux_server]\n$LINUX_PUBLIC_IP' >> ./Intentory/hosts.ini"
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
 						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
 						sh "az vm create --resource-group $AZURE_RESOURCE_GROUP --name '$VM_NAME' --image 'win2016datacenter' --size $VM_SIZE --os-disk-name '$VM_NAME-disk01' --public-ip-address-dns-name 'automatedwindows01' --admin-username 'techadmin' --admin-password 'Aa123456123456'  --tags 'Owner=Yuval' 'method=azcli'"
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME' --query publicIps -o tsv > PublicIPs.txt"
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
+
+						// Adds created virtual machines into Ansible 'hosts' file
+						sh "echo $'\n[windows_server]\n$WINDOWS_PUBLIC_IP' >> ./Intentory/hosts.ini"
 					}
 					else {
 						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 3 minutes"
@@ -91,6 +99,9 @@ pipeline {
 						sh "'' > PublicIPs.txt"  
 						sh "az vm show -d -g $AZURE_RESOURCE_GROUP -n '$VM_NAME-Windows' --query publicIps -o tsv > PublicIPs.txt"
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
+
+						// Adds created virtual machines into Ansible 'hosts' file
+						sh "echo $'\n[linux_server]\n$LINUX_PUBLIC_IP\n[windows_server]\n$WINDOWS_PUBLIC_IP' >> ./Intentory/hosts.ini"
 					}
 				}
 				// Clears the file
@@ -105,9 +116,7 @@ pipeline {
 				}
 			}
 			steps {
-				// TODO:
-				// Adds the virtual machines into Ansible 'hosts' file and tests connection using 'PING' command
-
+				// TODO: Configure ssh from Ansible server to newly created servers and run Ansible playbook
 				sh "echo Testing connection"
 	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
 			}
@@ -132,7 +141,7 @@ pipeline {
 				}
 			}
 		}
-		// Cleaning the resources 
+		// Cleans all created and modified resources 
 		stage("Cleanup") {
 			when{ 
 				branch "azcli-Deploy"
@@ -141,20 +150,53 @@ pipeline {
 				sh "echo Cleaning up resources"	
 				script{
 					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
-						sh "chmod +x ./scripts/Delete_Resources.sh"
-						sh "./scripts/Delete_Resources.sh ${VM_NAME}"
-						sh "echo All resources deleted successfully"   	
+						parallel {
+							stage('Cleanup Files') {
+								when { 
+									branch "azcli-Deploy"
+								}
+								steps {
+									script {
+										// Checks whether to remove 2/4 new added lines into 'hosts' file and removes them
+										if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
+											tail -n 2 "./Intentory/hosts.ini" | wc -c | xargs -I {} truncate "./Intentory/hosts.ini" -s -{}
+										}
+										else {
+											tail -n 4 "./Intentory/hosts.ini" | wc -c | xargs -I {} truncate "./Intentory/hosts.ini" -s -{}
+										}
+									}
+								}
+							}	
+							stage('Cleanup Resources') {
+								when { 
+									branch "azcli-Deploy"
+								}
+                    			steps {
+									script {
+										sh "chmod +x ./scripts/Delete_Resources.sh"
+										sh "./scripts/Delete_Resources.sh ${VM_NAME}"
+										sh "echo All resources deleted successfully"
+									}
+                    			}
+                			}		
+						}
 					}
 				}
 			}
 		}
 	}
-	post {
-        success {
-            mail to:"ypodoksik29@gmail.com", subject:"SUCCESS: ${currentBuild.fullDisplayName}", body: "$VM_NAME $VM_TYPE virtual machine in size $VM_SIZE was created and then deleted successfully."
-        }
-        failure {
-            mail to:"ypodoksik29@gmail.com", subject:"FAILED: ${currentBuild.fullDisplayName}", body: "There were problems in creating/deleting $VM_NAME $VM_TYPE virtual machine in size $VM_SIZE."
-        }
-    }   
+	// post {
+    //     success {
+	// 		agent { label 'master' }
+    //         mail to:"ypodoksik29@gmail.com", 
+	// 		subject:"SUCCESS: ${currentBuild.fullDisplayName}", 
+	// 		body: "$VM_NAME $VM_TYPE virtual machine in size $VM_SIZE was created and then deleted successfully."
+    //     }
+    //     failure {
+	// 		agent { label 'master' }
+    //         mail to:"ypodoksik29@gmail.com", 
+	// 		subject:"FAILED: ${currentBuild.fullDisplayName}", 
+	// 		body: "There were problems in creating/deleting $VM_NAME $VM_TYPE virtual machine in size $VM_SIZE."
+    //     }
+    // }   
 }

@@ -1,5 +1,5 @@
 ---
-- hosts: all_servers
+- hosts: linux_server
   become: yes
   become_method: sudo
   become_user: jenkins
