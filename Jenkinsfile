@@ -41,13 +41,13 @@ pipeline {
 					// TODO: Read vm creation parameters from txt file and assign them to global parameters for furthur creation process 
 					// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 					// sh "while read line; do echo $line; done < ./txtFiles/company.txt"
-					def file = readFile ./txtFiles/Parameters.txt
-					def lines = file.readLines()
+					// def file = readFile ./txtFiles/Parameters.txt
+					// def lines = file.readLines()
 
-					// sh "read -d '' -r -a lines < ./txtFiles/Parameters.txt"
-					VM_TYPE = "${lines[0]}"
-					VM_NAME = "${lines[1]}"
-					VM_SIZE = "${lines[2]}"
+					// // sh "read -d '' -r -a lines < ./txtFiles/Parameters.txt"
+					// VM_TYPE = "${lines[0]}"
+					// VM_NAME = "${lines[1]}"
+					// VM_SIZE = "${lines[2]}"
 				}
 
 				sh "echo Connecting to Azure cloud provider"
