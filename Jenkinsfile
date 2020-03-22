@@ -41,7 +41,7 @@ pipeline {
 				// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 
 				sh "chmod +x ./scripts/SplitToParameters.sh"
-				sh "./scripts/SplitToParameters.sh $VM_TYPE $VM_NAME $VM_SIZE"
+				sh "./scripts/SplitToParameters.sh ${VM_TYPE} ${VM_NAME} ${VM_SIZE}"
 
 				// VM_TYPE = "Linux Ubuntu"
 				// VM_NAME = "Technology-Automated"
