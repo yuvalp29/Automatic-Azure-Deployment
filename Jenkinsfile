@@ -4,6 +4,7 @@ pipeline {
 		VM_TYPE              = ""
 		VM_NAME              = ""
 		VM_SIZE              = ""
+		TERMINATION_INPUT    = ""
 		LINUX_PUBLIC_IP      = ""
 		Windows_PUBLIC_IP    = ""
 		AZURE_RESOURCE_GROUP = "Technology-RG"
@@ -109,6 +110,42 @@ pipeline {
 
 				sh "echo Testing connection"
 	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
+			}
+		}
+		// Validates whether to cleanup all created resources
+		stage("Validtaion") {
+			when{ 
+				branch "azcli-Deploy"
+			}
+			steps {
+				timeout(time: 60, unit: 'SECONDS') {
+					script {
+						def userInput = input id: 'userInput', message: 'Please type your answer', ok: 'Next', 
+						                parameters: [[$class: 'ChoiceParameterDefinition', 
+										            choices: ["Yes, delete my server", "No, keep it alive"].join('\n'), 
+										            description: 'Would you like to delete all created resources?', 
+													name:'TERMINATION']]
+    					
+						// Saves user's choise  for furthur steps 
+						TERMINATION_INPUT = userInput
+					}	
+				}
+			}
+		}
+		// Cleaning the resources 
+		stage("Cleanup") {
+			when{ 
+				branch "azcli-Deploy"
+			}
+			steps{		
+				sh "echo Cleaning up resources"	
+				script{
+					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
+						sh "chmod +x ./scripts/Delete_Resources.sh"
+						sh "./scripts/Delete_Resources.sh ${VM_NAME}"
+						sh "echo Resources deleted successfuly"   	
+					}
+				}
 			}
 		}
 	}
