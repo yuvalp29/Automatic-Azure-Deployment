@@ -45,9 +45,9 @@ pipeline {
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
 				sh "chmod 777 ./Inventory/hosts.ini"
 				
-				sh "echo -en \n[ >> ./Intentory/hosts.ini"
-				sh "echo azcli_servers >> ./Intentory/hosts.ini"
-				sh "echo ] >> ./Intentory/hosts.ini"
+				sh "echo -en \n[ >> ./Inventory/hosts.ini"
+				sh "echo azcli_servers >> ./Inventory/hosts.ini"
+				sh "echo ] >> ./Inventory/hosts.ini"
 
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
@@ -68,7 +68,7 @@ pipeline {
 						LINUX_PUBLIC_IP = readFile('PublicIPs.txt').trim() 
 
 						// Adds created virtual machine into Ansible 'hosts' file
-						sh "echo -en \n$LINUX_PUBLIC_IP >> ./Intentory/hosts.ini"
+						sh "echo -en \n$LINUX_PUBLIC_IP >> ./Inventory/hosts.ini"
 					}
 					else if ("${VM_TYPE}" == "Windows Server 2016") {
 						sh "echo Creating '$VM_NAME' $VM_TYPE virtual machine, it may take up to 3 minutes"
@@ -77,7 +77,7 @@ pipeline {
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 
 						// Adds created virtual machine into Ansible 'hosts' file
-						sh "echo -en \n$WINDOWS_PUBLIC_IP >> ./Intentory/hosts.ini"
+						sh "echo -en \n$WINDOWS_PUBLIC_IP >> ./Inventory/hosts.ini"
 					}
 					else {
 						sh "echo Creating both '$VM_NAME-Windows' and '$VM_NAME-Linux' virtual machines, it may take up to 3 minutes"
@@ -106,7 +106,7 @@ pipeline {
 						WINDOWS_PUBLIC_IP = readFile('PublicIPs.txt').trim()
 
 						// Adds created virtual machines into Ansible 'hosts' file
-						sh "echo -en \n$LINUX_PUBLIC_IP\n$WINDOWS_PUBLIC_IP >> ./Intentory/hosts.ini"
+						sh "echo -en \n$LINUX_PUBLIC_IP\n$WINDOWS_PUBLIC_IP >> ./Inventory/hosts.ini"
 					}
 				}
 				// Clears the file
@@ -164,10 +164,10 @@ pipeline {
 									script {
 										// Checks whether to remove 2/3 new added lines into 'hosts' file and removes them
 										if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
-											sh "tail -n 2 './Intentory/hosts.ini' | wc -c | xargs -I {} truncate './Intentory/hosts.ini' -s -{}"
+											sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
 										}
 										else {
-											sh "tail -n 3 './Intentory/hosts.ini' | wc -c | xargs -I {} truncate './Intentory/hosts.ini' -s -{}"
+											sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
 										}
 									}
 								}
