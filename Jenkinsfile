@@ -52,7 +52,7 @@ pipeline {
 			}
             steps {		
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
-				sh "chmod 777 ./Intentory/hosts.ini"
+				sh "chmod 777 ./Inventory/hosts.ini"
 				
 				script {
 					// Creates virtual machines, retrieves theirs public IPs and configures DNS for them
