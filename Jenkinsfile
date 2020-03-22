@@ -30,7 +30,7 @@ pipeline {
             }
         }
 		// Reads virtual machine's parameters from text file and loggs into Azure cloud provider
-		stage("Inittialize") {
+		stage("Initialize") {
 			when { 
                 branch "master";  branch "azcli-Deploy"; branch "Terraform-Deploy"
 			}
@@ -46,10 +46,7 @@ pipeline {
 				}
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
 				sh "chmod 777 ./Inventory/hosts.ini"	
-
-				sh """echo -en "\n\\[azcli_servers\\]" >> ./Inventory/hosts.ini"""
-				sh "echo -en \n'186.2.9.50' >> ./Inventory/hosts.ini"	
-
+				
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
 			}
