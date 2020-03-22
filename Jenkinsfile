@@ -159,10 +159,10 @@ pipeline {
 									script {
 										// Checks whether to remove 2/4 new added lines into 'hosts' file and removes them
 										if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
-											tail -n 2 "./Intentory/hosts.ini" | wc -c | xargs -I {} truncate "./Intentory/hosts.ini" -s -{}
+											sh "tail -n 2 './Intentory/hosts.ini' | wc -c | xargs -I {} truncate './Intentory/hosts.ini' -s -{}"
 										}
 										else {
-											tail -n 4 "./Intentory/hosts.ini" | wc -c | xargs -I {} truncate "./Intentory/hosts.ini" -s -{}
+											sh "tail -n 4 './Intentory/hosts.ini' | wc -c | xargs -I {} truncate './Intentory/hosts.ini' -s -{}"
 										}
 									}
 								}
