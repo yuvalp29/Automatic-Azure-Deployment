@@ -41,11 +41,14 @@ pipeline {
 				// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 
 				script {
-					sh "while read -r line; do my_array+='$line'; done < ./txtFiles/Parameters.txt"
 
-					VM_TYPE = "${my_array[0]}"
-					VM_NAME = "${my_array[1]}"
-					VM_SIZE = "${my_array[2]}"
+					// sh "while read -r line; do my_array+='$line'; done < ./txtFiles/Parameters.txt"
+
+				     def filePath = readFile "./txtFiles/Parameters.txt"                 
+				     def lines = filePath.readLines() 
+					 VM_TYPE = "${lines[0]}"
+					 VM_NAME = "${lines[1]}"
+					 VM_SIZE = "${lines[2]}"
 				}
 
 				// sh "chmod +x ./scripts/SplitToParameters.sh"
