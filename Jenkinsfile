@@ -44,7 +44,7 @@ pipeline {
 				}
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
 				sh "chmod 777 ./Inventory/hosts.ini"				
-				sh "echo -en \n$HOST_TITLE >> ./Inventory/hosts.ini"
+				sh "echo -en \n$HOSTS_TITLE >> ./Inventory/hosts.ini"
 
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
