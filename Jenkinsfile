@@ -43,11 +43,8 @@ pipeline {
 					VM_SIZE = "${lines[2]}"
 				}
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
-				sh "chmod 777 ./Inventory/hosts.ini"
-				
-				sh "echo -en \n[ >> ./Inventory/hosts.ini"
-				sh "echo azcli_servers >> ./Inventory/hosts.ini"
-				sh "echo ] >> ./Inventory/hosts.ini"
+				sh "chmod 777 ./Inventory/hosts.ini"				
+				sh 'echo -en \n"["azcli_servers"]" >> ./Inventory/hosts.ini'
 
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
