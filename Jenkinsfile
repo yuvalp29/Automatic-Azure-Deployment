@@ -8,7 +8,7 @@ pipeline {
 		Windows_PUBLIC_IP    = ""
 		TERMINATION_INPUT    = ""
 		AZURE_RESOURCE_GROUP = "Technology-RG"
-		HOSTS_TITLE          = '[azcli_servers]'
+		HOSTS_TITLE          = "[[azcli_servers]]"
 		AZURE_APP_ID         = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
 		AZURE_PASSWORD       = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
 		AZURE_TENANT         = "093e934e-7489-456c-bb5f-8bb6ea5d829c"
@@ -44,7 +44,7 @@ pipeline {
 				}
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
 				sh "chmod 777 ./Inventory/hosts.ini"				
-				sh 'echo -en \n"["azcli_servers"]" >> ./Inventory/hosts.ini'
+				sh "echo -en \n$HOST_TITLE >> ./Inventory/hosts.ini"
 
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"				
