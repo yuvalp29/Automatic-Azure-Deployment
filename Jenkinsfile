@@ -8,7 +8,6 @@ pipeline {
 		Windows_PUBLIC_IP    = ""
 		TERMINATION_INPUT    = ""
 		AZURE_RESOURCE_GROUP = "Technology-RG"
-		// HOSTS_TITLE          = "[[azcli_servers]
 		AZURE_APP_ID         = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
 		AZURE_PASSWORD       = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
 		AZURE_TENANT         = "093e934e-7489-456c-bb5f-8bb6ea5d829c"
@@ -155,36 +154,26 @@ pipeline {
 				sh "echo Cleaning up resources"	
 				script{
 					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
-						parallel {
-							stage('Cleanup Files') {
-								when { 
-									branch "azcli-Deploy"
-								}
-								steps {
-									script {
-										// Checks whether to remove new added lines into 'hosts' file and removes them
-										if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
-											sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
-										}
-										else {
-											sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
-										}
+						parallel (
+							"Cleanup Files" : {
+								script {
+									// Checks whether to remove new added lines into 'hosts' file and removes them
+									if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
+										sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+									}
+									else {
+										sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
 									}
 								}
-							}	
-							stage('Cleanup Resources') {
-								when { 
-									branch "azcli-Deploy"
+							},
+							"Cleanup Resources" : {
+								script {
+									sh "chmod +x ./scripts/Delete_Resources.sh"
+									sh "./scripts/Delete_Resources.sh ${VM_NAME}"
+									sh "echo All resources deleted successfully"
 								}
-                    			steps {
-									script {
-										sh "chmod +x ./scripts/Delete_Resources.sh"
-										sh "./scripts/Delete_Resources.sh ${VM_NAME}"
-										sh "echo All resources deleted successfully"
-									}
-                    			}
-                			}		
-						}
+							}
+						)
 					}
 				}
 			}
