@@ -41,7 +41,7 @@ pipeline {
 				// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 
 				script {
-					while read -r line; do my_array+=("$line"); done < ./txtFiles/Parameters.txt
+					while read -r line; do my_array+="$line"; done < ./txtFiles/Parameters.txt
 
 					VM_TYPE = "${my_array[0]}"
 					VM_NAME = "${my_array[1]}"
