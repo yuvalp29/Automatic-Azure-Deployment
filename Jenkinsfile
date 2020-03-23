@@ -39,6 +39,13 @@ pipeline {
 					VM_TYPE = "${lines[0]}"
 					VM_NAME = "${lines[1]}"
 					VM_SIZE = "${lines[2]}"
+
+					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
+						sh "echo > ./tfFiles/WindowsVM.tf"
+					}
+					else {
+						sh "echo > ./tfFiles/LinuxVM.tf"
+					}
                 }
 				
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
@@ -77,82 +84,83 @@ pipeline {
 				}
             }
         }
-		// Applyes Terraform and creates virtual machine 
-		stage("Apply") {
-			when { 
-				branch "Terraform-Deploy"
-			}
-            steps {
-				dir('./tfFiles') {
-					sh "terraform apply -input=false tfplan"
-				}
-				//TODO: retrieves theirs public IPs and configures DNS for them
-            }
-        }
-		// Tests connection to other servers using 'PING' command through Ansible playbook
-		stage("Connection Test") {
-			when { 
-				anyOf { 
-					branch "azcli-Deploy"; branch "Terraform-Deploy"
-				}
-			}
-			steps {
-				// TODO: Configure ssh from Ansible server to newly created servers and run Ansible playbook
-				sh "echo Testing connection"
-	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
-			}
-		}
-		// Validates whether to cleanup all Terraform created resources
-		stage("Validation") {
-			when { 
-				branch "Terraform-Deploy"
-			}
-			steps {
-				timeout(time: 300, unit: 'SECONDS') {
-					script {
-						def userInput = input id: 'userInput', message: 'Please Provide Parameters', ok: 'Next', 
-						                parameters: [[$class: 'ChoiceParameterDefinition', choices: ["Yes, delete my server", "No, keep it alive"].join('\n'), 
-										            description: 'Do you want to cleanup all created resources?', name:'TERMINATION']]
-    					
-						// Saves user choise in global variable for furthur steps 
-						TERMINATION_INPUT = userInput
-					}	
-				}
-			}
-		}
-		// Cleans all created and modified resources 
-		stage("Cleanup") {
-			when { 
-				branch "Terraform-Deploy"
-			}
-			steps {		
-				sh "echo Cleaning up resources"	
-				script{
-					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
-						parallel (
-							"Cleanup Files" : {
-								script {
-									// Checks whether to remove new added lines into 'hosts' file and removes them
-									if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
-										sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
-									}
-									else {
-										sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
-									}
-								}
-							},
-							"Cleanup Resources" : {
-								dir('./tfFiles') {
-									sh "terraform destroy --auto-approve"
-									sh "echo All resources deleted successfully"
-								}
-							}
-						)
-					}
-				}
-			}
-		}
 	}
+// 		// Applyes Terraform and creates virtual machine 
+// 		stage("Apply") {
+// 			when { 
+// 				branch "Terraform-Deploy"
+// 			}
+//             steps {
+// 				dir('./tfFiles') {
+// 					sh "terraform apply -input=false tfplan"
+// 				}
+// 				//TODO: retrieves theirs public IPs and configures DNS for them
+//             }
+//         }
+// 		// Tests connection to other servers using 'PING' command through Ansible playbook
+// 		stage("Connection Test") {
+// 			when { 
+// 				anyOf { 
+// 					branch "azcli-Deploy"; branch "Terraform-Deploy"
+// 				}
+// 			}
+// 			steps {
+// 				// TODO: Configure ssh from Ansible server to newly created servers and run Ansible playbook
+// 				sh "echo Testing connection"
+// 	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
+// 			}
+// 		}
+// 		// Validates whether to cleanup all Terraform created resources
+// 		stage("Validation") {
+// 			when { 
+// 				branch "Terraform-Deploy"
+// 			}
+// 			steps {
+// 				timeout(time: 300, unit: 'SECONDS') {
+// 					script {
+// 						def userInput = input id: 'userInput', message: 'Please Provide Parameters', ok: 'Next', 
+// 						                parameters: [[$class: 'ChoiceParameterDefinition', choices: ["Yes, delete my server", "No, keep it alive"].join('\n'), 
+// 										            description: 'Do you want to cleanup all created resources?', name:'TERMINATION']]
+    					
+// 						// Saves user choise in global variable for furthur steps 
+// 						TERMINATION_INPUT = userInput
+// 					}	
+// 				}
+// 			}
+// 		}
+// 		// Cleans all created and modified resources 
+// 		stage("Cleanup") {
+// 			when { 
+// 				branch "Terraform-Deploy"
+// 			}
+// 			steps {		
+// 				sh "echo Cleaning up resources"	
+// 				script{
+// 					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
+// 						parallel (
+// 							"Cleanup Files" : {
+// 								script {
+// 									// Checks whether to remove new added lines into 'hosts' file and removes them
+// 									if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
+// 										sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+// 									}
+// 									else {
+// 										sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+// 									}
+// 								}
+// 							},
+// 							"Cleanup Resources" : {
+// 								dir('./tfFiles') {
+// 									sh "terraform destroy --auto-approve"
+// 									sh "echo All resources deleted successfully"
+// 								}
+// 							}
+// 						)
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
 	post {
         always {
             archiveArtifacts artifacts: "tfFiles/tfplan.txt"
