@@ -1,0 +1,3 @@
+Linux Ubuntu 16.04
+Technology-Automated
+Standard_D2_v2

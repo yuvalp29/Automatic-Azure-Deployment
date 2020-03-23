@@ -4,6 +4,8 @@ pipeline {
 		VM_TYPE           = ""
 		VM_NAME           = ""
 		VM_SIZE           = ""
+		LINUX_PUBLIC_IP   = ""
+		WINDOWS_PUBLIC_IP = ""
 		TERMINATION_INPUT = ""
 		AZURE_APP_ID      = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
 		AZURE_PASSWORD    = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
@@ -24,20 +26,25 @@ pipeline {
 				}
             }
         }
-		// Reads virtual machine's parameters from text file, loggs into Azure cloud provider and inittialyzes Terraform
-		stage("Inittialize") {
+		// Reads virtual machine's parameters from text file, loggs into Azure cloud provider and initializes Terraform
+		stage("Initialize") {
 			when { 
 				branch "Terraform-Deploy"
 			}
 			steps {
 				script {
-                    currentBuild.displayName = "${version}"
+					// Reads parameters file and splits the lines to parameters for furthur creation proccesing 
+					def filePath = readFile "./txtFiles/Parameters.txt"                 
+				    def lines = filePath.readLines() 
+					VM_TYPE = "${lines[0]}"
+					VM_NAME = "${lines[1]}"
+					VM_SIZE = "${lines[2]}"
+					currentBuild.displayName = "${version}"
                 }
-				// while read -r line; do let lineNumber++; echo "LINE $lineNumber : value $line"; done < file.txt
 				
-				VM_TYPE = "Linux Ubuntu"
-				VM_NAME = "Technology-Automated"
-				VM_SIZE = "Standard_D2_v2" 
+				// Changes permissions to 'hosts' file in order to add the newly created servers 
+				sh "chmod 777 ./Inventory/hosts.ini"				
+				sh """echo -en "\n\\[azcli_servers\\]" >> ./Inventory/hosts.ini"""
 
 				sh "echo Connecting to Azure cloud provider"
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"
@@ -72,28 +79,25 @@ pipeline {
 			}
             steps {
                 sh "terraform apply -input=false tfplan"
+
+				//TODO: retrieves theirs public IPs and configures DNS for them
             }
         }
-		// Pinging to servers using Ansible playbook
+		// Tests connection to other servers using 'PING' command through Ansible playbook
 		stage("Connection Test") {
 			when { 
 				anyOf { 
-					branch "Terraform-Deploy"; branch "azcli-Deploy"
+					branch "azcli-Deploy"; branch "Terraform-Deploy"
 				}
 			}
 			steps {
-				// TODO:
-				// Retreives created virtual machine's public IP using azCLI and taggs and configures DNS for the machine
-				
-				// TODO:
-				// Adds the virtual machine into Ansible 'hosts' file and tests connection using 'PING' command
-
+				// TODO: Configure ssh from Ansible server to newly created servers and run Ansible playbook
 				sh "echo Testing connection"
-	    		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
+	    		// sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/TestConnection.yml"
 			}
 		}
-		// Getting from user desicion about terminating Terraform created resources
-		stage("Cleanup Option") {
+		// Validates whether to cleanup all Terraform created resources
+		stage("Validation") {
 			when { 
 				branch "Terraform-Deploy"
 			}
@@ -110,141 +114,42 @@ pipeline {
 				}
 			}
 		}
-		// Cleans created resources 
+		// Cleans all created and modified resources 
 		stage("Cleanup") {
 			when { 
 				branch "Terraform-Deploy"
 			}
 			steps {		
 				sh "echo Cleaning up resources"	
-				script {
-					if ("${TERMINATION_INPUT}" == "Yes, terminate them") {
-						sh "terraform destroy --auto-approve "
+				script{
+					if ("${TERMINATION_INPUT}" == "Yes, delete my server") {
+						parallel (
+							"Cleanup Files" : {
+								script {
+									// Checks whether to remove new added lines into 'hosts' file and removes them
+									if ("${VM_TYPE}" == "Linux Ubuntu 16.04" || "${VM_TYPE}" == "Windows Server 2016") {
+										sh "tail -n 2 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+									}
+									else {
+										sh "tail -n 3 './Inventory/hosts.ini' | wc -c | xargs -I {} truncate './Inventory/hosts.ini' -s -{}"
+									}
+								}
+							},
+							"Cleanup Resources" : {
+								script {
+									sh "terraform destroy --auto-approve "
+									sh "echo All resources deleted successfully"
+								}
+							}
+						)
 					}
 				}
-				sh "docker image prune -af"
 			}
 		}
 	}
-
 	post {
         always {
             archiveArtifacts artifacts: "tfplan.txt"
         }
     }
 }
-
-
-
-
-		// // TODO: Install Terraform using the script
-		// // Installing prerequisites using Ansible playbook and inittiating Terraform
-		// stage("Prerequisites") {
-		// 	when { 
-		// 		anyOf { 
-		// 			branch "Ansible-Deploy"; branch "Terraform-Deploy"
-		// 		}
-		// 	}
-		// 	steps {
-		// 		sh "echo Installing prerequisites and inittialyzing Terraform"
-	    // 		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/Prerequisites.yml"
-		// 		sh "ansible-playbook -i ./Inventory/hosts.ini -u jenkins ./ymlFiles/AzureCLI.yml"
-		// 	}
-		// }
-		// // Getting from user what vm version to create
-		// stage("VM Deployment Option") {
-			
-		// 	agent { label 'k8s' }
-
-		// 	when { 
-		// 		branch "Terraform-Deploy"
-		// 	}
-		// 	steps {
-		// 		timeout(time: 45, unit: 'SECONDS') {
-		// 			script {
-		// 				def userInput = input id: 'userInput', message: 'Please Provide Parameters', ok: 'Next', 
-		// 				                parameters: [[$class: 'ChoiceParameterDefinition', 
-		// 											  choices: ["Deploy both virtual mechines", 
-		// 											            "Deploy Linux Ubuntu 16.04 virtual machine", 
-		// 														"Deploy Windows Server 2019 virtual machine"].join('\n'), 
-		// 											  description: 'Please select deployment option and operating system version', 
-		// 											  name:'DEPLOYMENT']]
-    					
-		// 				// Saving user choise in global variable for furthur steps 
-		// 				DEPLOYMENT_INPUT = userInput
-		// 			}	
-		// 		}
-		// 	}
-		// }
-		// // TODO:
-		// // Creating virtual machines according to user's choise + validating the creation
-		// stage("VM Creation") {
-
-		// 	agent { label 'k8s' }
-
-		// 	when { 
-		// 		branch "Terraform-Deploy"
-		// 	}
-		// 	steps {		
-		// 		script {
-		// 			if ("${DEPLOYMENT_INPUT}" == "Deploy Linux Ubuntu 16.04 virtual machine") {
-		// 				// TODO: Retrieve public IP
-		// 				sh """
-		// 				echo Creating Azure resources for Linux Ubuntu 16.04 virtual machine.
-		// 				terraform plan -target=./tfFiles/Linux_VM.tf
-		// 				terraform apply -target=./tfFiles/Linux_VM.tf -auto-approve
-		// 				"""
-		// 			}
-		// 			else if ("${DEPLOYMENT_INPUT}" == "Deploy Windows Server 2019 virtual machine") {
-		// 				// TODO: Retrieve public IP
-		// 				sh """
-        //                 echo Creating Azure resources for Windows Server 2019 virtual machine.
-		// 				terraform plan -target=./tfFiles/Windows_VM.tf
-		// 				terraform apply -target=./tfFiles/Windows_VM.tf -auto-approve
-        //                 """
-		// 			}
-		// 			else {
-		// 				// TODO: Retrieve public IP
-		// 				sh "echo Creating Azure resources for both Windows and Linux virtual machines."
-		// 				parallel {
-		// 					stage('Windows Server 2019') {
-		// 						when { 
-		// 							branch "Terraform-Deploy"
-		// 						}
-        //             			steps {
-		// 							sh """
-		// 							terraform plan -target=./tfFiles/Windows_VM.tf
-		// 							terraform apply -target=./tfFiles/Windows_VM.tf -auto-approve
-        //                 			"""
-        //             			}
-        //         			}
-		// 					stage('Linux Ubuntu 16.04') {
-		// 						when { 
-		// 							branch "Terraform-Deploy"
-		// 						}
-		// 						steps {
-		// 							sh """
-		// 							terraform plan -target=./tfFiles/Linux_VM.tf
-		// 							terraform apply -target=./tfFiles/Linux_VM.tf -auto-approve
-		// 							"""
-		// 						}
-		// 					}			
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }		
-		// // TODO:
-		// stage('Configure Jenkins Slaves') {
-		// 	// Configuring the vms as jenkins slaves: connecting the VM to the master using ssh configuration
-		// 	// Pring a message that says that vm are ready and configured for slave 
-			
-		// 	agent { label 'k8s' }
-			
-		// 	when { 
-		// 		branch "Terraform-Deploy"
-		// 	}
-		// 	steps {		
-		// 		sh "echo Configuring Jenkins slaves."	
-		// 	}
-		// }
