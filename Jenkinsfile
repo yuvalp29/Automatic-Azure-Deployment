@@ -50,7 +50,8 @@ pipeline {
 
 				sh "echo Preparing Terraform"
 				sh "cd ./tfFiles"
-				sh "chmod +x ./*"
+				sh "ech pwd"
+				sh "chmod +x ./tfFiles/*"
 				sh "terraform init -input=false"
                 sh "terraform plan -input=false -out tfplan"
                 sh "terraform show -no-color tfplan > tfplan.txt"
