@@ -142,8 +142,8 @@ pipeline {
 								}
 							},
 							"Cleanup Resources" : {
-								script {
-									sh "terraform destroy --auto-approve "
+								dir('./tfFiles') {
+									sh "terraform apply -input=false tfplan"
 									sh "echo All resources deleted successfully"
 								}
 							}
@@ -156,6 +156,12 @@ pipeline {
 	post {
         always {
             archiveArtifacts artifacts: "tfplan.txt"
+        }
+		failure {
+			dir('./tfFiles') {
+				terraform apply -input=false tfplan
+				echo "All resources deleted successfully"
+			}            
         }
     }
 }
