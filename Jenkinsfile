@@ -161,8 +161,7 @@ pipeline {
 			dir('./tfFiles') {
 				sh "terraform destroy --auto-approve"
 				sh "echo All resources deleted successfully"
-			}
-            
+			}            
         }
     }
 }
