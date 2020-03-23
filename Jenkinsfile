@@ -111,7 +111,7 @@ pipeline {
 				timeout(time: 300, unit: 'SECONDS') {
 					script {
 						def userInput = input id: 'userInput', message: 'Please Provide Parameters', ok: 'Next', 
-						                parameters: [[$class: 'ChoiceParameterDefinition', choices: ["Yes, terminate them", "No, keep them alive"].join('\n'), 
+						                parameters: [[$class: 'ChoiceParameterDefinition', choices: ["Yes, delete my server", "No, keep it alive"].join('\n'), 
 										            description: 'Do you want to cleanup all created resources?', name:'TERMINATION']]
     					
 						// Saves user choise in global variable for furthur steps 
@@ -155,7 +155,7 @@ pipeline {
 	}
 	post {
         always {
-            archiveArtifacts artifacts: "./tfFiles/tfplan.txt"
+            archiveArtifacts artifacts: "tfFiles/tfplan.txt"
         }
 		failure {
 			dir('./tfFiles') {
