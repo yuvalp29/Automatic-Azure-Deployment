@@ -49,7 +49,7 @@ pipeline {
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"
 
 				sh "echo Preparing Terraform"
-          		dir('./tfFiles'){
+          		dir('./tfFiles') {
             		sh """
 					chmod +x ./*
 					terraform init -input=false
@@ -68,11 +68,13 @@ pipeline {
 				branch "Terraform-Deploy"
             }
             steps {
-                script {
-                    def plan = readFile 'tfplan'
-                    input message: "Do you want to apply the plan?",
-                        parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
-                }
+				dir('./tfFiles') {
+					script {
+                    	def plan = readFile 'tfplan.txt'
+                    	input message: "Do you want to apply the plan?",
+	                                   parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
+                	}
+				}
             }
         }
 		// Applyes Terraform and creates virtual machine 
@@ -81,8 +83,9 @@ pipeline {
 				branch "Terraform-Deploy"
 			}
             steps {
-                sh "terraform apply -input=false tfplan"
-
+				dir('./tfFiles') {
+					sh "terraform apply -input=false tfplan"
+				}
 				//TODO: retrieves theirs public IPs and configures DNS for them
             }
         }
