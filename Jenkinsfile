@@ -39,7 +39,7 @@ pipeline {
 					VM_TYPE = "${lines[0]}"
 					VM_NAME = "${lines[1]}"
 					VM_SIZE = "${lines[2]}"
-					currentBuild.displayName = "${version}"
+					// currentBuild.displayName = "${version}"
                 }
 				
 				// Changes permissions to 'hosts' file in order to add the newly created servers 
