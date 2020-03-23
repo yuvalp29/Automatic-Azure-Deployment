@@ -44,11 +44,6 @@ variable "disk_type" {
   description = "The type of the disk of the created virtual machine"
 }
 
-variable "vm_type" {
-  default     = "Linux Ubuntu 16.04"
-  description = "The image type of the created virtual machine"
-}
-
 variable "vm_name" {
   default     = "Technology-Automated"
   description = "The name of the created virtual machine"
