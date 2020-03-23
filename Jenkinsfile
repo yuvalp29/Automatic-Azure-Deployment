@@ -84,7 +84,6 @@ pipeline {
 				}
             }
         }
-	}
 		// Applyes Terraform and creates virtual machine 
 		stage("Apply") {
 			when { 
