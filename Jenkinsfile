@@ -34,7 +34,7 @@ pipeline {
 			steps {
 				script {
 					// Reads parameters file and splits the lines to parameters for furthur creation proccesing 
-					def filePath = readFile "./txtFiles/Parameters.txt"                 
+					def filePath = readFile "./txtFiles/Parameters.txt"
 				    def lines = filePath.readLines() 
 					VM_TYPE = "${lines[0]}"
 					VM_NAME = "${lines[1]}"
