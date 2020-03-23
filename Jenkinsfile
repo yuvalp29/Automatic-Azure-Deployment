@@ -49,9 +49,10 @@ pipeline {
 				sh "az login --service-principal --username $AZURE_APP_ID --password $AZURE_PASSWORD --tenant $AZURE_TENANT"
 
 				sh "echo Preparing Terraform"
+				sh "cd ./tfFiles"
+				sh "chmod +x ./*"
 				sh "terraform init -input=false"
-                sh "terraform workspace select ${environment}"
-                sh "terraform plan -input=false -out tfplan --var-file=environments/${environment}.tfvars"
+                sh "terraform plan -input=false -out tfplan"
                 sh "terraform show -no-color tfplan > tfplan.txt"
 			}
 		}
