@@ -108,7 +108,7 @@ pipeline {
 				branch "Terraform-Deploy"
 			}
 			steps {
-				timeout(time: 45, unit: 'SECONDS') {
+				timeout(time: 300, unit: 'SECONDS') {
 					script {
 						def userInput = input id: 'userInput', message: 'Please Provide Parameters', ok: 'Next', 
 						                parameters: [[$class: 'ChoiceParameterDefinition', choices: ["Yes, terminate them", "No, keep them alive"].join('\n'), 
@@ -155,7 +155,7 @@ pipeline {
 	}
 	post {
         always {
-            archiveArtifacts artifacts: "tfplan.txt"
+            archiveArtifacts artifacts: "./tfFiles/tfplan.txt"
         }
 		failure {
 			dir('./tfFiles') {
