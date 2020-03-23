@@ -50,12 +50,12 @@ pipeline {
 
 				sh "echo Preparing Terraform"
 
-				sh "$PWD"
+				sh "pwd"
           		dir('./tfFiles'){
-            		sh "$PWD"
+            		sh "pwd"
 					sh "chmod +x ./*"
           		}
-          		sh "$PWD"
+          		sh "pwd"
 
 				// sh "terraform init -input=false"
                 // sh "terraform plan -input=false -out tfplan"
