@@ -7,7 +7,7 @@ pipeline {
     }
 
     agent { label 'slave01-ssh' }
-	triggers { cron('0 0/5 * ? * * *') }
+	// triggers { cron('0 0/5 * ? * * *') }
 	
     stages {
 		// Gets commit_id in GitHub
