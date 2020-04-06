@@ -1,18 +1,11 @@
-variable "subscription_id" {
-  default     = "35a022b0-938c-4075-bee9-58add25f07a3"
-}
+##################################################################################
+# VARIABLES
+##################################################################################
 
-variable "client_id" {
-  default     = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
-}
-
-variable "client_secret" {
-  default     = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
-}
-
-variable "tenant_id" {
-  default     = "093e934e-7489-456c-bb5f-8bb6ea5d829c"
-}
+variable "subscription_id" {}
+variable "client_id" {}
+variable "client_secret" {}
+variable "tenant_id" {}
 
 variable "resource_group" {
   default     = "Technology-RG"

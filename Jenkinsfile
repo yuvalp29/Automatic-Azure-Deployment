@@ -4,8 +4,6 @@ pipeline {
 		VM_TYPE           = ""
 		VM_NAME           = ""
 		VM_SIZE           = ""
-		LINUX_PUBLIC_IP   = ""
-		WINDOWS_PUBLIC_IP = ""
 		TERMINATION_INPUT = ""
 		AZURE_APP_ID      = "e135aa97-15a7-46da-9d2a-6c18e47bf7eb"
 		AZURE_PASSWORD    = "3cb64ca4-82f8-495e-bf35-c121e8b316e1"
@@ -41,10 +39,10 @@ pipeline {
 					VM_SIZE = "${lines[2]}"
 
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						sh "echo > ./tfFiles/WindowsVM.tf"
+						sh "cp ./tfFiles/WindowsVM.tf ./tfFiles/WindowsVM.tf.rename"
 					}
 					else {
-						sh "echo > ./tfFiles/LinuxVM.tf"
+						sh "cp ./tfFiles/LinuxVM.tf ./tfFiles/LinuxVM.tf.rename"
 					}
                 }
 				
@@ -163,6 +161,14 @@ pipeline {
 	post {
         always {
             archiveArtifacts artifacts: "tfFiles/tfplan.txt"
+			script {
+				if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
+					sh "cp ./tfFiles/WindowsVM.tf.rename ./tfFiles/WindowsVM.tf"
+				}
+				else {
+					sh "cp ./tfFiles/LinuxVM.tf.rename ./tfFiles/LinuxVM.tf"
+				}
+            }
         }
 		failure {
 			dir('./tfFiles') {
