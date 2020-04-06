@@ -39,10 +39,10 @@ pipeline {
 					VM_SIZE = "${lines[2]}"
 
 					if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-						sh "cp ./tfFiles/WindowsVM.tf ./tfFiles/WindowsVM.tf.rename"
+						sh "mv ./tfFiles/WindowsVM.tf ./tfFiles/WindowsVM.tf.rename"
 					}
 					else {
-						sh "cp ./tfFiles/LinuxVM.tf ./tfFiles/LinuxVM.tf.rename"
+						sh "mv ./tfFiles/LinuxVM.tf ./tfFiles/LinuxVM.tf.rename"
 					}
                 }
 				
@@ -163,10 +163,10 @@ pipeline {
             archiveArtifacts artifacts: "tfFiles/tfplan.txt"
 			script {
 				if ("${VM_TYPE}" == "Linux Ubuntu 16.04") {
-					sh "cp ./tfFiles/WindowsVM.tf.rename ./tfFiles/WindowsVM.tf"
+					sh "mv ./tfFiles/WindowsVM.tf.rename ./tfFiles/WindowsVM.tf"
 				}
 				else {
-					sh "cp ./tfFiles/LinuxVM.tf.rename ./tfFiles/LinuxVM.tf"
+					sh "mv ./tfFiles/LinuxVM.tf.rename ./tfFiles/LinuxVM.tf"
 				}
             }
         }
